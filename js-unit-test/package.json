@@ -1,0 +1,23 @@
+{
+  "name": "qcommerce-tests",
+  "version": "1.0.0",
+  "description": "run unit tests for qcommerce",
+  "scripts": {
+    "test": "grunt"
+  },
+  "author": "mgable",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "1.5.8",
+    "angular-foundation": "^0.8.0",
+    "angular-mocks": "1.5.8",
+    "grunt": "^1.0.1",
+    "grunt-angular-templates": "^1.1.0",
+    "grunt-cli": "^1.2.0",
+    "grunt-contrib-jasmine": "^1.1.0",
+    "jquery": "^3.2.1",
+    "load-grunt-tasks": "^3.5.2",
+    "time-grunt": "^1.4.0",
+    "underscore": "^1.8.3"
+  }
+}
