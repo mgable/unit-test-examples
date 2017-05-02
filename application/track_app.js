@@ -1,8 +1,7 @@
 (function(){
 	"use strict";
-	// angular.module("TrackingApp", ['drinks.directives', "drinks.services", "drinks.constants"]);
-
 	angular.module("drinks.directives").service("TrackCtrl", ["globalObj", function(globalObj){
+
 		function _getTrackingData(data){
 			if (!data || _.isEmpty(data)){
 				return {};
@@ -29,7 +28,7 @@
 			if (event && analytics && typeof analytics.track === "function"){
 				analytics.track(event, properties);
 			} else if(!event){
-				// console.info("no event name given");
+				throw new Error("No tracking event is defined");
 			} else {
 				throw new Error("No analytics engine");
 			}

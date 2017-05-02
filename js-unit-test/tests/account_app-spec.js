@@ -581,7 +581,7 @@
 				spyOn(OrderHistory, "getItem").and.callFake(makeFakeFunction($q, testData));
 
 				scope.$digest();
-			}))
+			}));
 
 			it ("should get order history", function(){
 				expect(OrderHistory.get).toHaveBeenCalled();
