@@ -22,7 +22,7 @@
 				var apply = false;
 				USA_STATES.getStates().then(function(states){
 					if(apply){
-						scope.$apply(
+						scope.$applyAsync(
 							function(){scope.states = states;}
 						);
 					} else {
@@ -33,7 +33,7 @@
 				// is this a billing address which needs to immediately appear
 				// or is it a shipping address which only appears on demand
 				if (!scope.states){
-					apply = true
+					apply = true;
 				}
 
 				scope.bypassValidation = false;

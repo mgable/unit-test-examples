@@ -351,6 +351,10 @@
 
 			}));
 
+			it('should exist', inject(function () {
+				expect(element.html()).toBeDefined();
+			}));
+
 			it('should default to detail view', inject(function ($timeout) {
 				$timeout.flush();
 
