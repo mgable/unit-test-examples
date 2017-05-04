@@ -28,7 +28,6 @@
 				}
 
 				scope.newAddress = function(address){
-					console.info("fuck!");
 					if (scope.type === "shipping"){
 						scope.$emit("SHOW-ADDRESS", (address ? false : address));
 						DataStore.save('shippingAddress', address);
@@ -49,7 +48,6 @@
 					if (scope.form === address.form.selector){
 						scope.addresses.push(address);
 						scope.model = address;
-
 						scope.$emit("SHOW-ADDRESS", false);
 					}
 					
