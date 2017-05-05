@@ -184,6 +184,21 @@
 					$(document).scrollTop(0);
 				});
 
+				function _addAddress(evt, address){
+					scope.addresses.push(_makeStateName(address));
+					scope.editAddress.$setPristine();
+					scope.address = false;
+				}
+
+				function _makeStateName(address){
+					if (address.qcommerce_state && address.qcommerce_state.name){	
+						address.state = address.state || {};
+						address.state.name = address.qcommerce_state.name;
+					} 
+
+					return address;
+				}
+
 				scope.edit = function(address){
 					activeAddress = _.clone(address);
 
@@ -191,7 +206,6 @@
 					scope.address = address;
 					scope.action = scope.update;
 					scope.editAddress.$setPristine();
-					$rootScope.$broadcast("ERRORS-CLEAR");
 				}
 
 				scope.delete = function(address){
@@ -235,7 +249,6 @@
 					scope.address = {};
 					scope.action = scope.save;
 					scope.editAddress.$setPristine();
-					$rootScope.$broadcast("ERRORS-CLEAR");
 				}
 
 				scope.cancel = function(address, evt){
@@ -246,6 +259,7 @@
 					scope.addresses[index] = activeAddress;
 					scope.address = false;
 				}
+
 
 				function _addAddress(evt, address){
 					scope.addresses.push(_makeStateName(address));
@@ -262,6 +276,13 @@
 
 					return address;
 				}
+
+				scope.$watch('address', function() {
+					$rootScope.$broadcast("ERRORS-CLEAR");
+					$rootScope.$broadcast("ADDRESS-SUGGESTIONS-RESET");
+					$(document).scrollTop(0);
+				});
+
 
 				function _openConfirmModal() {
 					var modalInstance = $modal.open({

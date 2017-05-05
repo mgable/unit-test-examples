@@ -36,15 +36,22 @@
 					apply = true;
 				}
 
+				scope.submitInProgress = false;
 				scope.bypassValidation = false;
 				scope.id = scope.form.replace(/^\#/, "") + "-" + scope.type;
 
 				scope.$emit("ADDING-ADDRESS", {type: scope.type, action:"add"});
 				scope.$on("VALIDATE-ADDRESS", function(evt, form){
 					// only submit for this instance
-					if (form === scope.form){
+					if (form === scope.form && !scope.submitInProgress){
 						_submitAddressForm(form);
 					}
+				});
+				scope.$on("WAIT", function(evt, data) {
+					scope.submitInProgress = data.wait;
+				});
+				scope.$on("ADDRESS-SUGGESTIONS-RESET", function(evt, form){
+					scope.bypassValidation = false;
 				});
 				scope.$on("$destroy", _destroy);
 
