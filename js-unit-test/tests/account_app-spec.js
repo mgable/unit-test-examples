@@ -523,7 +523,6 @@
 				expect(scope.address).toBe(testData);
 				expect(scope.action).toBe(scope.update);
 				expect(scope.editAddress.$setPristine).toHaveBeenCalled();
-				expect($rootScope.$broadcast).toHaveBeenCalledWith("ERRORS-CLEAR");
 			});
 
 			it ("should delete an address", function(){
@@ -555,7 +554,6 @@
 				scope.addAddress();
 				expect(scope.action).toBe(scope.save);
 				expect(scope.editAddress.$setPristine).toHaveBeenCalled();
-				expect($rootScope.$broadcast).toHaveBeenCalledWith("ERRORS-CLEAR");
 			});
 
 			it ("should cancel the editing of an address", function(){
