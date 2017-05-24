@@ -82,47 +82,6 @@
 		});
 
 	});
-
-	var fakeModal = {
-		result: {
-			then: function(confirmCallback, cancelCallback) {
-				//Store the callbacks for later when the user clicks on the OK or Cancel button of the dialog
-				this.confirmCallBack = confirmCallback;
-				this.cancelCallback = cancelCallback;
-			}
-		},
-		close: function( item ) {
-			//The user clicked OK on the modal dialog, call the stored confirm callback with the selected item
-			this.result.confirmCallBack( item );
-		},
-		dismiss: function( type ) {
-			//The user clicked cancel on the modal dialog, call the stored cancel callback
-			this.result.cancelCallback( type );
-		}
-	};
-
-	function makeFakeFunction($q, testData){
-		return function fakePromise(){
-			var deferred = $q.defer();
-			deferred.resolve(testData);
-			return deferred.promise;
-		}
-	}
-
-	function sprintf(o){
-		var cache = [];
-		return JSON.stringify(o, function(key, value) {
-			if (typeof value === 'object' && value !== null) {
-				if (cache.indexOf(value) !== -1) {
-					// Circular reference found, discard key
-					return;
-				}
-				// Store value in our collection
-				cache.push(value);
-			}
-			return value;
-		});
-	}
 })();
 
 

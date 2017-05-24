@@ -5,6 +5,7 @@
 		var accountApi,
 			detailsRE,
 			addressRE,
+			ordersRE,
 			element,
 			Addresses, AccountDetails, AccountProfile, AccountPassword, OrderHistory, Customer, DataStore,
 			$http,
@@ -20,8 +21,11 @@
 			$httpBackend = _$httpBackend_;
 			detailsRE = new RegExp(accountApi.details + "\\d?");
 			addressRE = new RegExp(accountApi.address + "\\d?");
+			ordersRE = new RegExp(accountApi.orders + ".*?");
 			$httpBackend.when('GET', addressRE).respond(mockResponse);
 			$httpBackend.when('GET', accountApi.address).respond(mockResponse);
+			$httpBackend.when('GET', accountApi.addressIndex).respond(mockResponse);
+			$httpBackend.when('GET', ordersRE).respond(mockResponse);
 			$httpBackend.when('GET', detailsRE).respond(mockResponse);
 			$httpBackend.when('GET', accountApi.orders).respond(mockResponse);
 			$httpBackend.when('PUT', addressRE).respond(mockResponse);
@@ -79,7 +83,7 @@
 					it("should be called with the correct url", function(){
 						Addresses.get();
 						$httpBackend.flush();
-						expect($http.get).toHaveBeenCalledWith(accountApi.address);
+						expect($http.get).toHaveBeenCalledWith(accountApi.addressIndex);
 					});
 				});
 
@@ -290,7 +294,7 @@
 
 
 				it("should return a response", function(){
-					OrderHistory.get(mockResponse).then(function(response){
+					OrderHistory.get(1,10).then(function(response){
 						expect(response.data).toEqual(mockResponse);
 					});
 					$httpBackend.flush();
@@ -476,7 +480,7 @@
 		});
 
 		describe("Book Directive", function(){
-			var testData = {data: true, qcommerce_state_id: 5, "address[last_name]": "smith", "address[first_name]": "john"};
+			var testData = {data: true, qcommerce_state_id: 5, state: {id: 5}, "address[last_name]": "smith", "address[first_name]": "john"};
 
 			beforeEach(inject(function (_Addresses_, $q, $compile, _$rootScope_, _$modal_){
 				var $modal = _$modal_;
@@ -568,7 +572,7 @@
 		});
 
 		describe("History Directive", function(){
-			var testData = {data: true},
+			var testData = {data: {orders: true}},
 				id = 1;
 
 			beforeEach(inject(function(_OrderHistory_, _$rootScope_, $compile, $q){
@@ -587,7 +591,7 @@
 
 			it ("should get order history", function(){
 				expect(OrderHistory.get).toHaveBeenCalled();
-				expect(scope.orders).toEqual(testData.data);
+				expect(scope.orders).toEqual(testData.data.orders);
 			});
 
 			it ("should get details", function(){
@@ -640,21 +644,6 @@
 			deferred.resolve(testData);
 			return deferred.promise;
 		}
-	}
-
-	function sprintf(o){
-		var cache = [];
-		return JSON.stringify(o, function(key, value) {
-			if (typeof value === 'object' && value !== null) {
-				if (cache.indexOf(value) !== -1) {
-					// Circular reference found, discard key
-					return;
-				}
-				// Store value in our collection
-				cache.push(value);
-			}
-			return value;
-		});
 	}
 })();
 

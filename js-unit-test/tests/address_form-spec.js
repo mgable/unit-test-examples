@@ -66,27 +66,4 @@
 			// });
 		});
 	});
-
-	function makeFakeFunction($q, testData){
-		return function fakePromise(){
-			var deferred = $q.defer();
-			deferred.resolve(testData);
-			return deferred.promise;
-		}
-	}
-
-	function sprintf(o){
-		var cache = [];
-		return JSON.stringify(o, function(key, value) {
-			if (typeof value === 'object' && value !== null) {
-				if (cache.indexOf(value) !== -1) {
-					// Circular reference found, discard key
-					return;
-				}
-				// Store value in our collection
-				cache.push(value);
-			}
-			return value;
-		});
-	}
 })();
