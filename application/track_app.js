@@ -14,7 +14,7 @@
 			}
 		}
 
-		this.track = function(attrs){
+		this.track = function(attrs, element){
 			if (!globalObj.customer && !globalObj.anonymous_id) {
 				return;
 			}
@@ -31,6 +31,12 @@
 				throw new Error("No tracking event is defined");
 			} else {
 				throw new Error("No analytics engine");
+			}
+			// QE 592 FIX
+			if (element && element.attr("track") && element.attr("track-toggle")) {
+				var trackBuffer = element.attr("track");
+				element.attr("track", element.attr("track-toggle"));
+				element.attr("track-toggle", trackBuffer); 
 			}
 		}
 	}]).directive("track", ["TrackCtrl", function(ctrl){

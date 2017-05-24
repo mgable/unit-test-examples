@@ -15,8 +15,9 @@
 		// var baseUrl = '/api/addresses/'
 		var baseUrl = accountApi.address;
 
+
 		this.get = function(){
-			return $http.get(baseUrl);
+			return $http.get(accountApi.addressIndex);
 		}
 
 		this.save = function(address){
@@ -57,16 +58,47 @@
 		};
 	}])
 	.service("OrderHistory", ["$http", "Customer", "accountApi", function($http, Customer, accountApi){
-		var id = Customer.getCustomerId(),
-			baseUrl = accountApi.orders;
+
+		var baseUrl = accountApi.orders;
+		this.get = function(page, ordersPerPage){
+			var options = {params: {}};
+			if (page) {
+				options.params['page'] = page;
+			}
+			if (ordersPerPage) {
+				options.params['per_page'] = ordersPerPage;
+			}
+			return $http.get(baseUrl, options);
+		}
+
+		this.getItem = function(id){
+			return $http.get(baseUrl + id);
+		};
+	}])
+	.service("Subscription", ["$http", "accountApi", function($http, accountApi){
+		var baseUrl = accountApi.subscriptions;
 
 		this.get = function(){
 			return $http.get(baseUrl);
 		};
 
-		this.getItem = function(id){
-			return $http.get(baseUrl + id);
+		this.updatePackType = function(subscription, type){
+			return $http.put(baseUrl + "/" + subscription.id + "?subscription[preference]=" + type);
 		};
+
+		this.updateSubscriptionLabel = function(subscription, label){
+			return $http.put(baseUrl + "/" + subscription.id + "?subscription[label]=" + label); 
+		};
+
+		this.updateSubscriptionShippingAddress = function(subscription, addressId, isPermanent){
+			var url = baseUrl + "/" + subscription.id + "?subscription[qcommerce_shipping_address_id]=" + addressId;
+
+			if (!isPermanent){
+				url += "&subscription[one_time_shipping_address_update]=true";
+			}
+			return $http.put(url); 
+		}
+
 	}])
 	.directive("account", [function(){
 		return {
@@ -75,6 +107,76 @@
 			link: function(scope){
 				scope.switchTo = function(which){
 					scope.$broadcast("change-app", which);
+					scope.whichApp = which;
+				}
+			}
+		}
+	}])
+	.directive("subscriptions", ["Subscription", "Addresses", function(Subscription, Addresses){
+		return {
+			templateUrl: 'subscriptions.html',
+			restrict: "E",
+			link: function(scope, element, attrs){
+				Subscription.get().then(function(response){
+					scope.groups = _.groupBy(response.data, function(subscription){
+						return subscription.is_gift ? "gift" : "recurring";
+					});
+				});
+
+				scope.pack = {};
+				scope.label = {};
+				scope.shipping = {};
+				scope.isPermanent = {value: 'true'};
+				scope.action = _change;
+
+				scope.getAddresses = function(){
+					Addresses.get().then(function(response){
+						scope.addresses = response.data;
+					});
+				};
+
+				scope.updatePackType = function(subscription, type){
+					if (type && type !== subscription.pack_type){
+						Subscription.updatePackType(subscription, type).then(function(response){
+							_updateSubscriptionValue (subscription, "pack_type", type)
+						});
+					} else {
+						console.info("pack type did not change");
+					}
+				};
+
+				scope.updateSubscriptionLabel = function(subscription, label){
+					if (subscription && label){
+						Subscription.updateSubscriptionLabel(subscription, label).then(function(response){
+							_updateSubscriptionValue(subscription, "label", label);
+						});
+					}
+				};
+
+				function _change(){scope.getAddresses(); scope.action = _save;}
+
+				function _save(){_updateSubscriptionShippingAddress.apply(null, Array.prototype.slice.apply(arguments));scope.action = _change;}
+
+				function _updateSubscriptionShippingAddress(subscription, addressId){ //, isPermanent
+					if (subscription && addressId){
+
+						Subscription.updateSubscriptionShippingAddress(subscription, addressId).then(function(response){ //, isPermanent
+							_updateSubscription(subscription, response.data);
+						});
+					}
+				}
+
+				function _updateSubscriptionValue (subscription, attrs, value){
+					subscription[attrs] = value;
+				}
+
+				function _updateSubscription (oldSubscription, newSubscription){
+					var index = _getSubscriptionIndexById(oldSubscription);
+					scope.groups[oldSubscription.is_gift ? "gift" : "recurring"].splice(index,1,newSubscription);
+				}
+
+				function _getSubscriptionIndexById(subscription){
+					return  _.indexOf(scope.groups[subscription.is_gift ? "gift" : "recurring"], subscription);
 				}
 			}
 		}
@@ -179,6 +281,9 @@
 				scope.address = false;
 
 				scope.$on("ADDRESS-VALIDATED", _addAddress);
+				scope.$on("RESPONSE-FAIL", function() {
+					scope.submitInProgress = false;
+				});
 
 				scope.$watch('address', function() {
 					$(document).scrollTop(0);
@@ -194,6 +299,7 @@
 					if (address.qcommerce_state && address.qcommerce_state.name){	
 						address.state = address.state || {};
 						address.state.name = address.qcommerce_state.name;
+						address.state.id = address.qcommerce_state.id;
 					} 
 
 					return address;
@@ -202,7 +308,7 @@
 				scope.edit = function(address){
 					activeAddress = _.clone(address);
 
-					address.state = address.qcommerce_state_id.toString();
+					address.state = address.state.id.toString();
 					scope.address = address;
 					scope.action = scope.update;
 					scope.editAddress.$setPristine();
@@ -221,11 +327,13 @@
 					if (evt){
 						evt.preventDefault();
 					}
-					
+					scope.submitInProgress = true;
 					Addresses.update(address).then(function(response){
 						var index = _.indexOf(scope.addresses, address);
 						scope.addresses[index] = _makeStateName(response.data);
 						scope.address = false;
+					}, function() {
+						scope.submitInProgress = false;
 					});
 				}
 
@@ -236,6 +344,7 @@
 
 					scope.editAddress.$setSubmitted();
 					if (_.isEmpty(scope.editAddress.$error)){
+						scope.submitInProgress = true;
 						scope.$broadcast("VALIDATE-ADDRESS", "#editAddress");
 					} else {
 						console.error("There are errors in the form");
@@ -258,6 +367,10 @@
 					var index = _.indexOf(scope.addresses, address);
 					scope.addresses[index] = activeAddress;
 					scope.address = false;
+				}
+
+				scope.saveIsDisabled = function() {
+					return (scope.editAddress && (scope.editAddress.$pristine || scope.editAddress.$invalid ))  || scope.submitInProgress;
 				}
 
 
@@ -306,21 +419,49 @@
 			}
 		}
 	}])
-	.directive("history", ["OrderHistory", function(OrderHistory){
+	.directive("history", ["OrderHistory", "$window", "$timeout", function(OrderHistory, $window, $timeout){
 		return {
 			templateUrl: "order_history.html",
 			retrict: "AE",
 			link: function(scope, element, attrs){
 
-				OrderHistory.get().then(function(response){
-					scope.orders = response.data;
+				var initialOrdersFetched = false;
+				scope.orders = [];
+				scope.totalOrders = 0;
+				scope.currentPage = 1;
+				scope.ordersPerPage = 10;
+				scope.fetchingOrders = true;
+
+				scope.$watch('currentPage', function(newVal, oldVal) {
+					scope.currentPage = newVal;
+					scope.show = false;
+					scope.getOrders();
 				});
+
+				scope.getOrders = function() {
+					scope.fetchingOrders = true;
+					OrderHistory.get(scope.currentPage, scope.ordersPerPage).then(function(response){
+						scope.totalOrders = response.data.count;
+						scope.orders = response.data.orders;
+						scope.fetchingOrders = false;
+
+						if (initialOrdersFetched && Foundation.utils.is_small_only()) {
+							$timeout(function() {
+								angular.element($window).scrollTop(0);
+							});
+						}
+						initialOrdersFetched = true;
+					}, function(error, status) {
+						scope.fetchingOrders = false;
+						console.error(error, status);
+					});
+				};
 
 				scope.getDetails = function(id){
 					OrderHistory.getItem(id).then(function(response){
-						var order = _.find(scope.orders, {id: id})
+						var order = _.find(scope.orders, {id: id});
 						scope.detail = response.data; //_format(response.data);
-					})
+					});
 				}
 
 				scope.getCarrier = function(carrier){
@@ -354,6 +495,28 @@
 						shipping: details.shipping
 					}
 				}
+			}
+		}
+	}])
+	.directive('changeSave', [function(){
+		return {
+			restrict: "A",
+			scope: true,
+			link: function(scope, element, attrs){
+				element.on("click", function(){
+					// toggle visibility
+					if (attrs.changeSave){
+						angular.element(attrs.changeSave).toggleClass("hide");
+					}
+
+					// change button text
+					if (element.text().toLowerCase() === "change"){
+						element.text("save");
+					} else {
+						element.text("change");
+					}
+		
+				});
 			}
 		}
 	}])
